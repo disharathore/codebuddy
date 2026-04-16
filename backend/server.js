@@ -120,7 +120,7 @@ app.use((err, req, res, next) => {
 });
 
 initDb().then(() => {
-  app.listen(PORT, () => {
+  app.listen(PORT, '0.0.0.0', () => {
     console.log(`\n🚀 CodeBuddy API → http://localhost:${PORT}`);
     console.log(`📊 Health check  → http://localhost:${PORT}/health`);
     console.log(`🌐 CORS origins  → ${allowedOrigins.join(', ')}`);
