@@ -107,8 +107,7 @@ function initSchema() {
 }
 
 function seedProblems() {
-  const row = dbGet('SELECT COUNT(*) as c FROM problems');
-  if (row && Number(row.c) > 0) return;
+  const beforeCount = Number(dbGet('SELECT COUNT(*) as c FROM problems')?.c) || 0;
 
   const problems = [
     {
@@ -403,7 +402,8 @@ print(s2)  # Expected: ['h', 'a', 'n', 'n', 'a', 'H']`,
         { input: { s: ["H","a","n","n","a","h"] }, expected: ["h","a","n","n","a","H"] }
       ]),
       tags: JSON.stringify(['two-pointers','strings','in-place'])
-    }
+    },
+    ...buildExpandedProblemSet()
   ];
 
   for (const p of problems) {
@@ -413,7 +413,506 @@ print(s2)  # Expected: ['h', 'a', 'n', 'n', 'a', 'H']`,
       [p.id,p.title,p.slug,p.difficulty,p.language,p.category,p.description,p.starter_code,p.solution_code,p.test_cases,p.tags]
     );
   }
-  console.log(`✅ Seeded ${problems.length} problems`);
+  const totalCount = Number(dbGet('SELECT COUNT(*) as c FROM problems')?.c) || problems.length;
+  const addedCount = Math.max(0, totalCount - beforeCount);
+  console.log(`✅ Problem catalog ready: ${totalCount} total (${addedCount} added this run)`);
+}
+
+function buildExpandedProblemSet() {
+  const starter = (exampleInput) => `def solve(data):
+    # Your solution here
+    pass
+
+
+print(solve(${JSON.stringify(exampleInput)}))`;
+
+  const mk = ({ id, title, slug, difficulty, category, description, tags, exampleInput, solutionCode, tests }) => ({
+    id,
+    title,
+    slug,
+    difficulty,
+    language: 'python',
+    category,
+    description,
+    starter_code: starter(exampleInput),
+    solution_code: solutionCode,
+    test_cases: JSON.stringify(tests),
+    tags: JSON.stringify(tags)
+  });
+
+  return [
+    mk({
+      id: 'p007', title: 'Palindrome Number', slug: 'palindrome-number', difficulty: 'beginner', category: 'Math',
+      description: 'Given an integer n, return true if it reads the same backward.',
+      tags: ['math', 'string-conversion'],
+      exampleInput: { n: 121 },
+      solutionCode: `def solve(data):
+    s = str(data['n'])
+    return s == s[::-1]`,
+      tests: [
+        { input: { n: 121 }, expected: true },
+        { input: { n: -121 }, expected: false },
+        { input: { n: 10 }, expected: false }
+      ]
+    }),
+    mk({
+      id: 'p008', title: 'Contains Duplicate', slug: 'contains-duplicate', difficulty: 'beginner', category: 'Hashing',
+      description: 'Return true if any value appears at least twice in nums.',
+      tags: ['hash-set', 'arrays'],
+      exampleInput: { nums: [1, 2, 3, 1] },
+      solutionCode: `def solve(data):
+    nums = data['nums']
+    return len(nums) != len(set(nums))`,
+      tests: [
+        { input: { nums: [1, 2, 3, 1] }, expected: true },
+        { input: { nums: [1, 2, 3, 4] }, expected: false }
+      ]
+    }),
+    mk({
+      id: 'p009', title: 'Valid Anagram', slug: 'valid-anagram', difficulty: 'beginner', category: 'Strings',
+      description: 'Given strings s and t, return true if t is an anagram of s.',
+      tags: ['strings', 'sorting'],
+      exampleInput: { s: 'anagram', t: 'nagaram' },
+      solutionCode: `def solve(data):
+    return sorted(data['s']) == sorted(data['t'])`,
+      tests: [
+        { input: { s: 'anagram', t: 'nagaram' }, expected: true },
+        { input: { s: 'rat', t: 'car' }, expected: false }
+      ]
+    }),
+    mk({
+      id: 'p010', title: 'Move Zeroes', slug: 'move-zeroes', difficulty: 'beginner', category: 'Arrays',
+      description: 'Move all 0s to the end while preserving the order of non-zero elements.',
+      tags: ['two-pointers', 'arrays'],
+      exampleInput: { nums: [0, 1, 0, 3, 12] },
+      solutionCode: `def solve(data):
+    nums = data['nums']
+    out = [n for n in nums if n != 0]
+    out.extend([0] * (len(nums) - len(out)))
+    return out`,
+      tests: [
+        { input: { nums: [0, 1, 0, 3, 12] }, expected: [1, 3, 12, 0, 0] },
+        { input: { nums: [0, 0, 1] }, expected: [1, 0, 0] }
+      ]
+    }),
+    mk({
+      id: 'p011', title: 'Missing Number', slug: 'missing-number', difficulty: 'beginner', category: 'Math',
+      description: 'Given nums containing n distinct numbers in [0, n], return the missing one.',
+      tags: ['math', 'bit-manipulation'],
+      exampleInput: { nums: [3, 0, 1] },
+      solutionCode: `def solve(data):
+    nums = data['nums']
+    n = len(nums)
+    return n * (n + 1) // 2 - sum(nums)`,
+      tests: [
+        { input: { nums: [3, 0, 1] }, expected: 2 },
+        { input: { nums: [0, 1] }, expected: 2 }
+      ]
+    }),
+    mk({
+      id: 'p012', title: 'Best Time to Buy and Sell Stock', slug: 'best-time-buy-sell-stock', difficulty: 'beginner', category: 'Arrays',
+      description: 'Find the maximum profit from one buy and one sell.',
+      tags: ['greedy', 'arrays'],
+      exampleInput: { prices: [7, 1, 5, 3, 6, 4] },
+      solutionCode: `def solve(data):
+    prices = data['prices']
+    min_price = float('inf')
+    best = 0
+    for p in prices:
+      if p < min_price:
+        min_price = p
+      best = max(best, p - min_price)
+    return best`,
+      tests: [
+        { input: { prices: [7, 1, 5, 3, 6, 4] }, expected: 5 },
+        { input: { prices: [7, 6, 4, 3, 1] }, expected: 0 }
+      ]
+    }),
+    mk({
+      id: 'p013', title: 'Length of Last Word', slug: 'length-of-last-word', difficulty: 'beginner', category: 'Strings',
+      description: 'Return the length of the last word in string s.',
+      tags: ['strings'],
+      exampleInput: { s: 'Hello World' },
+      solutionCode: `def solve(data):
+    words = data['s'].strip().split()
+    return len(words[-1]) if words else 0`,
+      tests: [
+        { input: { s: 'Hello World' }, expected: 5 },
+        { input: { s: '   fly me   to   the moon  ' }, expected: 4 }
+      ]
+    }),
+    mk({
+      id: 'p014', title: 'Roman to Integer', slug: 'roman-to-integer', difficulty: 'beginner', category: 'Strings',
+      description: 'Convert a Roman numeral string to an integer.',
+      tags: ['hash-map', 'strings'],
+      exampleInput: { s: 'MCMXCIV' },
+      solutionCode: `def solve(data):
+    s = data['s']
+    vals = {'I':1,'V':5,'X':10,'L':50,'C':100,'D':500,'M':1000}
+    total = 0
+    for i, ch in enumerate(s):
+      if i + 1 < len(s) and vals[ch] < vals[s[i + 1]]:
+        total -= vals[ch]
+      else:
+        total += vals[ch]
+    return total`,
+      tests: [
+        { input: { s: 'III' }, expected: 3 },
+        { input: { s: 'MCMXCIV' }, expected: 1994 }
+      ]
+    }),
+    mk({
+      id: 'p015', title: 'Transpose Matrix', slug: 'transpose-matrix', difficulty: 'beginner', category: 'Matrices',
+      description: 'Return the transpose of a matrix.',
+      tags: ['matrices'],
+      exampleInput: { matrix: [[1, 2, 3], [4, 5, 6]] },
+      solutionCode: `def solve(data):
+    matrix = data['matrix']
+    return [list(col) for col in zip(*matrix)]`,
+      tests: [
+        { input: { matrix: [[1,2,3],[4,5,6]] }, expected: [[1,4],[2,5],[3,6]] },
+        { input: { matrix: [[1,2],[3,4],[5,6]] }, expected: [[1,3,5],[2,4,6]] }
+      ]
+    }),
+    mk({
+      id: 'p016', title: 'Climbing Stairs', slug: 'climbing-stairs', difficulty: 'beginner', category: 'Dynamic Programming',
+      description: 'Given n steps, return number of distinct ways to climb 1 or 2 steps at a time.',
+      tags: ['dp', 'fibonacci'],
+      exampleInput: { n: 5 },
+      solutionCode: `def solve(data):
+    n = data['n']
+    a, b = 1, 1
+    for _ in range(n):
+      a, b = b, a + b
+    return a`,
+      tests: [
+        { input: { n: 2 }, expected: 2 },
+        { input: { n: 5 }, expected: 8 }
+      ]
+    }),
+    mk({
+      id: 'p017', title: 'Product of Array Except Self', slug: 'product-except-self', difficulty: 'intermediate', category: 'Arrays',
+      description: 'Return output where output[i] is product of all nums except nums[i] without division.',
+      tags: ['prefix', 'arrays'],
+      exampleInput: { nums: [1, 2, 3, 4] },
+      solutionCode: `def solve(data):
+    nums = data['nums']
+    out = [1] * len(nums)
+    p = 1
+    for i in range(len(nums)):
+      out[i] = p
+      p *= nums[i]
+    s = 1
+    for i in range(len(nums) - 1, -1, -1):
+      out[i] *= s
+      s *= nums[i]
+    return out`,
+      tests: [
+        { input: { nums: [1,2,3,4] }, expected: [24,12,8,6] },
+        { input: { nums: [-1,1,0,-3,3] }, expected: [0,0,9,0,0] }
+      ]
+    }),
+    mk({
+      id: 'p018', title: 'Top K Frequent Elements', slug: 'top-k-frequent-elements', difficulty: 'intermediate', category: 'Hashing',
+      description: 'Return the k most frequent elements in nums.',
+      tags: ['hash-map', 'heap'],
+      exampleInput: { nums: [1, 1, 1, 2, 2, 3], k: 2 },
+      solutionCode: `def solve(data):
+    nums, k = data['nums'], data['k']
+    freq = {}
+    for n in nums:
+      freq[n] = freq.get(n, 0) + 1
+    ranked = sorted(freq.items(), key=lambda x: (-x[1], x[0]))
+    return [n for n, _ in ranked[:k]]`,
+      tests: [
+        { input: { nums: [1,1,1,2,2,3], k: 2 }, expected: [1,2] },
+        { input: { nums: [4,4,4,6,6,7,7,7], k: 1 }, expected: [4] }
+      ]
+    }),
+    mk({
+      id: 'p019', title: 'Group Anagrams', slug: 'group-anagrams', difficulty: 'intermediate', category: 'Strings',
+      description: 'Group words that are anagrams.',
+      tags: ['hash-map', 'strings'],
+      exampleInput: { strs: ['eat', 'tea', 'tan', 'ate', 'nat', 'bat'] },
+      solutionCode: `def solve(data):
+    groups = {}
+    for word in data['strs']:
+      key = ''.join(sorted(word))
+      groups.setdefault(key, []).append(word)
+    normalized = [sorted(g) for g in groups.values()]
+    return sorted(normalized)`,
+      tests: [
+        { input: { strs: ['eat','tea','tan','ate','nat','bat'] }, expected: [['ate','eat','tea'], ['bat'], ['nat','tan']] },
+        { input: { strs: [''] }, expected: [['']] }
+      ]
+    }),
+    mk({
+      id: 'p020', title: 'Longest Substring Without Repeating Characters', slug: 'longest-substring-without-repeating', difficulty: 'intermediate', category: 'Sliding Window',
+      description: 'Return the length of the longest substring without repeating characters.',
+      tags: ['sliding-window', 'strings'],
+      exampleInput: { s: 'abcabcbb' },
+      solutionCode: `def solve(data):
+    s = data['s']
+    seen = {}
+    left = 0
+    best = 0
+    for right, ch in enumerate(s):
+      if ch in seen and seen[ch] >= left:
+        left = seen[ch] + 1
+      seen[ch] = right
+      best = max(best, right - left + 1)
+    return best`,
+      tests: [
+        { input: { s: 'abcabcbb' }, expected: 3 },
+        { input: { s: 'bbbbb' }, expected: 1 },
+        { input: { s: 'pwwkew' }, expected: 3 }
+      ]
+    }),
+    mk({
+      id: 'p021', title: 'Daily Temperatures', slug: 'daily-temperatures', difficulty: 'intermediate', category: 'Stacks',
+      description: 'For each day, return how many days to wait for a warmer temperature.',
+      tags: ['monotonic-stack', 'arrays'],
+      exampleInput: { temperatures: [73, 74, 75, 71, 69, 72, 76, 73] },
+      solutionCode: `def solve(data):
+    t = data['temperatures']
+    out = [0] * len(t)
+    st = []
+    for i, val in enumerate(t):
+      while st and t[st[-1]] < val:
+        j = st.pop()
+        out[j] = i - j
+      st.append(i)
+    return out`,
+      tests: [
+        { input: { temperatures: [73,74,75,71,69,72,76,73] }, expected: [1,1,4,2,1,1,0,0] },
+        { input: { temperatures: [30,40,50,60] }, expected: [1,1,1,0] }
+      ]
+    }),
+    mk({
+      id: 'p022', title: 'Evaluate Reverse Polish Notation', slug: 'evaluate-rpn', difficulty: 'intermediate', category: 'Stacks',
+      description: 'Evaluate an arithmetic expression in Reverse Polish Notation.',
+      tags: ['stack', 'math'],
+      exampleInput: { tokens: ['2', '1', '+', '3', '*'] },
+      solutionCode: `def solve(data):
+    st = []
+    for tok in data['tokens']:
+      if tok in ['+', '-', '*', '/']:
+        b = st.pop()
+        a = st.pop()
+        if tok == '+': st.append(a + b)
+        elif tok == '-': st.append(a - b)
+        elif tok == '*': st.append(a * b)
+        else: st.append(int(a / b))
+      else:
+        st.append(int(tok))
+    return st[-1]`,
+      tests: [
+        { input: { tokens: ['2','1','+','3','*'] }, expected: 9 },
+        { input: { tokens: ['4','13','5','/','+'] }, expected: 6 }
+      ]
+    }),
+    mk({
+      id: 'p023', title: 'Number of Islands', slug: 'number-of-islands', difficulty: 'intermediate', category: 'Graphs',
+      description: 'Given a 2D grid of 1s and 0s, return number of islands.',
+      tags: ['dfs', 'grid'],
+      exampleInput: { grid: [['1','1','0','0'],['1','0','0','1'],['0','0','1','1']] },
+      solutionCode: `def solve(data):
+    grid = [row[:] for row in data['grid']]
+    if not grid:
+      return 0
+    r, c = len(grid), len(grid[0])
+    seen = set()
+
+    def dfs(i, j):
+      if i < 0 or i >= r or j < 0 or j >= c or grid[i][j] != '1' or (i, j) in seen:
+        return
+      seen.add((i, j))
+      dfs(i + 1, j)
+      dfs(i - 1, j)
+      dfs(i, j + 1)
+      dfs(i, j - 1)
+
+    islands = 0
+    for i in range(r):
+      for j in range(c):
+        if grid[i][j] == '1' and (i, j) not in seen:
+          islands += 1
+          dfs(i, j)
+    return islands`,
+      tests: [
+        { input: { grid: [['1','1','0','0','0'],['1','1','0','0','0'],['0','0','1','0','0'],['0','0','0','1','1']] }, expected: 3 },
+        { input: { grid: [['1','1','1'],['0','1','0'],['1','1','1']] }, expected: 1 }
+      ]
+    }),
+    mk({
+      id: 'p024', title: 'Coin Change', slug: 'coin-change', difficulty: 'intermediate', category: 'Dynamic Programming',
+      description: 'Given coins and amount, return minimum number of coins needed, or -1 if impossible.',
+      tags: ['dp'],
+      exampleInput: { coins: [1, 2, 5], amount: 11 },
+      solutionCode: `def solve(data):
+    coins, amount = data['coins'], data['amount']
+    dp = [amount + 1] * (amount + 1)
+    dp[0] = 0
+    for a in range(1, amount + 1):
+      for coin in coins:
+        if coin <= a:
+          dp[a] = min(dp[a], dp[a - coin] + 1)
+    return dp[amount] if dp[amount] <= amount else -1`,
+      tests: [
+        { input: { coins: [1,2,5], amount: 11 }, expected: 3 },
+        { input: { coins: [2], amount: 3 }, expected: -1 }
+      ]
+    }),
+    mk({
+      id: 'p025', title: 'Longest Increasing Subsequence', slug: 'longest-increasing-subsequence', difficulty: 'intermediate', category: 'Dynamic Programming',
+      description: 'Return length of the longest strictly increasing subsequence.',
+      tags: ['dp', 'binary-search'],
+      exampleInput: { nums: [10, 9, 2, 5, 3, 7, 101, 18] },
+      solutionCode: `def solve(data):
+    nums = data['nums']
+    tails = []
+    for num in nums:
+      left, right = 0, len(tails)
+      while left < right:
+        mid = (left + right) // 2
+        if tails[mid] < num:
+          left = mid + 1
+        else:
+          right = mid
+      if left == len(tails):
+        tails.append(num)
+      else:
+        tails[left] = num
+    return len(tails)`,
+      tests: [
+        { input: { nums: [10,9,2,5,3,7,101,18] }, expected: 4 },
+        { input: { nums: [7,7,7,7,7] }, expected: 1 }
+      ]
+    }),
+    mk({
+      id: 'p026', title: 'Combination Sum', slug: 'combination-sum', difficulty: 'intermediate', category: 'Backtracking',
+      description: 'Return all unique combinations of candidates where numbers sum to target.',
+      tags: ['backtracking', 'recursion'],
+      exampleInput: { candidates: [2, 3, 6, 7], target: 7 },
+      solutionCode: `def solve(data):
+    candidates = sorted(data['candidates'])
+    target = data['target']
+    out = []
+
+    def dfs(start, remain, path):
+      if remain == 0:
+        out.append(path[:])
+        return
+      for i in range(start, len(candidates)):
+        c = candidates[i]
+        if c > remain:
+          break
+        path.append(c)
+        dfs(i, remain - c, path)
+        path.pop()
+
+    dfs(0, target, [])
+    return sorted(out)`,
+      tests: [
+        { input: { candidates: [2,3,6,7], target: 7 }, expected: [[2,2,3],[7]] },
+        { input: { candidates: [2,3,5], target: 8 }, expected: [[2,2,2,2],[2,3,3],[3,5]] }
+      ]
+    }),
+    mk({
+      id: 'p027', title: 'Trapping Rain Water', slug: 'trapping-rain-water', difficulty: 'advanced', category: 'Two Pointers',
+      description: 'Given elevation map heights, compute total trapped rain water.',
+      tags: ['two-pointers', 'arrays'],
+      exampleInput: { heights: [0,1,0,2,1,0,1,3,2,1,2,1] },
+      solutionCode: `def solve(data):
+    h = data['heights']
+    left, right = 0, len(h) - 1
+    left_max = right_max = 0
+    water = 0
+    while left < right:
+      if h[left] < h[right]:
+        left_max = max(left_max, h[left])
+        water += left_max - h[left]
+        left += 1
+      else:
+        right_max = max(right_max, h[right])
+        water += right_max - h[right]
+        right -= 1
+    return water`,
+      tests: [
+        { input: { heights: [0,1,0,2,1,0,1,3,2,1,2,1] }, expected: 6 },
+        { input: { heights: [4,2,0,3,2,5] }, expected: 9 }
+      ]
+    }),
+    mk({
+      id: 'p028', title: 'Sliding Window Maximum', slug: 'sliding-window-maximum', difficulty: 'advanced', category: 'Sliding Window',
+      description: 'Return the maximum value in each window of size k.',
+      tags: ['deque', 'sliding-window'],
+      exampleInput: { nums: [1,3,-1,-3,5,3,6,7], k: 3 },
+      solutionCode: `def solve(data):
+    nums, k = data['nums'], data['k']
+    from collections import deque
+    dq = deque()
+    out = []
+    for i, n in enumerate(nums):
+      while dq and dq[0] <= i - k:
+        dq.popleft()
+      while dq and nums[dq[-1]] <= n:
+        dq.pop()
+      dq.append(i)
+      if i >= k - 1:
+        out.append(nums[dq[0]])
+    return out`,
+      tests: [
+        { input: { nums: [1,3,-1,-3,5,3,6,7], k: 3 }, expected: [3,3,5,5,6,7] },
+        { input: { nums: [1], k: 1 }, expected: [1] }
+      ]
+    }),
+    mk({
+      id: 'p029', title: 'Word Ladder Length', slug: 'word-ladder-length', difficulty: 'advanced', category: 'Graphs',
+      description: 'Return the length of shortest transformation sequence from begin_word to end_word.',
+      tags: ['bfs', 'graphs'],
+      exampleInput: { begin_word: 'hit', end_word: 'cog', word_list: ['hot','dot','dog','lot','log','cog'] },
+      solutionCode: `def solve(data):
+    begin = data['begin_word']
+    end = data['end_word']
+    words = set(data['word_list'])
+    if end not in words:
+      return 0
+    queue = [(begin, 1)]
+    seen = {begin}
+    while queue:
+      word, dist = queue.pop(0)
+      if word == end:
+        return dist
+      for i in range(len(word)):
+        for ch in 'abcdefghijklmnopqrstuvwxyz':
+          nxt = word[:i] + ch + word[i+1:]
+          if nxt in words and nxt not in seen:
+            seen.add(nxt)
+            queue.append((nxt, dist + 1))
+    return 0`,
+      tests: [
+        { input: { begin_word: 'hit', end_word: 'cog', word_list: ['hot','dot','dog','lot','log','cog'] }, expected: 5 },
+        { input: { begin_word: 'hit', end_word: 'cog', word_list: ['hot','dot','dog','lot','log'] }, expected: 0 }
+      ]
+    }),
+    mk({
+      id: 'p030', title: 'Median of Two Sorted Arrays', slug: 'median-two-sorted-arrays', difficulty: 'advanced', category: 'Searching',
+      description: 'Given two sorted arrays, return their median.',
+      tags: ['binary-search', 'arrays'],
+      exampleInput: { nums1: [1, 3], nums2: [2] },
+      solutionCode: `def solve(data):
+    merged = sorted(data['nums1'] + data['nums2'])
+    n = len(merged)
+    if n % 2 == 1:
+      return float(merged[n // 2])
+    return (merged[n // 2 - 1] + merged[n // 2]) / 2.0`,
+      tests: [
+        { input: { nums1: [1,3], nums2: [2] }, expected: 2.0 },
+        { input: { nums1: [1,2], nums2: [3,4] }, expected: 2.5 }
+      ]
+    })
+  ];
 }
 
 function seedDemoAnalytics() {

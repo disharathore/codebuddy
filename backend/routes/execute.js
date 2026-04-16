@@ -42,7 +42,7 @@ function buildTestRunner(slug, userCode, testCasesJson) {
     'reverse-string':   `_reverse_str_run(inp['s'][:])`, // copy so original untouched
   };
 
-  const call = callMap[slug] || 'None';
+  const call = callMap[slug] || `solve(inp)`;
 
   // Special wrapper for in-place reverse
   const reverseHelper = slug === 'reverse-string' ? `
@@ -58,7 +58,7 @@ ${userCode}
 
 ${reverseHelper}
 
-test_cases = ${JSON.stringify(testCases)}
+test_cases = json.loads('''${JSON.stringify(testCases)}''')
 passed = 0
 total = len(test_cases)
 results = []
