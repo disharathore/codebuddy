@@ -8,7 +8,13 @@ const api = axios.create({
 })
 
 api.interceptors.response.use(
-  res => res.data,
+  res => {
+    const contentType = res.headers?.['content-type'] || ''
+    if (typeof res.data === 'string' && contentType.includes('text/html')) {
+      return Promise.reject(new Error('API is misconfigured: frontend received HTML instead of JSON. Check VITE_API_BASE_URL or Vercel rewrites.'))
+    }
+    return res.data
+  },
   err => {
     const msg = err.response?.data?.error || err.message || 'Request failed'
     return Promise.reject(new Error(msg))

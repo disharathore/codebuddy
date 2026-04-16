@@ -10,14 +10,21 @@ export default function ProblemsPage() {
   const navigate = useNavigate()
   const [problems, setProblems] = useState([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState('')
   const [search, setSearch] = useState('')
   const [filterDiff, setFilterDiff] = useState('all')
   const [filterCat, setFilterCat] = useState('all')
 
   useEffect(() => {
     getProblems()
-      .then(data => setProblems(data.problems || []))
-      .catch(console.error)
+      .then(data => {
+        setProblems(data.problems || [])
+        setLoadError('')
+      })
+      .catch((err) => {
+        console.error(err)
+        setLoadError(err.message || 'Failed to load problems')
+      })
       .finally(() => setLoading(false))
   }, [])
 
@@ -99,6 +106,10 @@ export default function ProblemsPage() {
           {[...Array(4)].map((_, i) => (
             <div key={i} className="glass rounded-xl h-24 animate-pulse" />
           ))}
+        </div>
+      ) : loadError ? (
+        <div className="text-center py-20 text-rose-300">
+          {loadError}
         </div>
       ) : filtered.length === 0 ? (
         <div className="text-center py-20 text-slate-500">
