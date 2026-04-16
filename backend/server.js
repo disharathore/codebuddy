@@ -80,7 +80,7 @@ app.get('/health/live', (req, res) => {
 app.get('/health/ready', (req, res) => {
   const checks = {
     database: false,
-    gemini_key: Boolean(process.env.GEMINI_API_KEY)
+    groq_key: Boolean(process.env.GROQ_API_KEY)
   };
 
   try {
@@ -90,7 +90,7 @@ app.get('/health/ready', (req, res) => {
     checks.database = false;
   }
 
-  const ready = checks.database && checks.gemini_key;
+  const ready = checks.database && checks.groq_key;
   const statusCode = ready ? 200 : 503;
 
   res.status(statusCode).json({
@@ -124,7 +124,7 @@ initDb().then(() => {
     console.log(`\n🚀 CodeBuddy API → http://localhost:${PORT}`);
     console.log(`📊 Health check  → http://localhost:${PORT}/health`);
     console.log(`🌐 CORS origins  → ${allowedOrigins.join(', ')}`);
-    console.log(`🔑 Gemini key    → ${process.env.GEMINI_API_KEY ? '✅ configured' : '❌ MISSING — add to .env!'}\n`);
+    console.log(`🔑 Groq key      → ${process.env.GROQ_API_KEY ? '✅ configured' : '❌ MISSING — add to .env!'}\n`);
   });
 }).catch(err => {
   console.error('❌ DB init failed:', err.message);

@@ -10,8 +10,8 @@ This setup deploys:
 2. In Render, create a new Web Service from your repo.
 3. Render auto-detects configuration from render.yaml at project root.
 4. Set these environment variables in Render dashboard:
-  - GEMINI_API_KEY = your real key
-  - GEMINI_MODEL = gemini-1.5-flash
+  - GROQ_API_KEY = your real key
+  - GROQ_MODEL = llama-3.1-8b-instant
    - CORS_ORIGINS = https://your-frontend-domain.vercel.app
 5. Deploy and wait for green health.
 6. Verify backend URLs:
@@ -60,7 +60,7 @@ All checks should pass.
   Ensure CORS_ORIGINS exactly matches deployed frontend domain.
 
 - Hints fail:
-  Verify GEMINI_API_KEY exists in Render and key is active.
+  Verify GROQ_API_KEY exists in Render and key is active.
 
 - Frontend loads but API fails:
   Verify VITE_API_BASE_URL points to backend /api URL.

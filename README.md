@@ -7,7 +7,7 @@ CodeBuddy is an AI-powered coding platform that gives students adaptive, progres
 - **Level 2 — Pseudocode:** Step-by-step logic in plain English  
 - **Level 3 — Near-Code:** Almost-complete code with strategic blanks to fill
 
-Hints are generated live via the Gemini API (streaming), responses are stored in SQLite, and learning analytics are tracked across sessions.
+Hints are generated live via the Groq API (streaming), responses are stored in SQLite, and learning analytics are tracked across sessions.
 
 ---
 
@@ -19,7 +19,7 @@ Hints are generated live via the Gemini API (streaming), responses are stored in
 | Editor | Monaco Editor (same as VS Code) |
 | Backend | Node.js, Express |
 | Database | SQLite via sql.js (pure JS, no native build) |
-| AI | Gemini API (streaming SSE) |
+| AI | Groq API (streaming SSE) |
 | Code Execution | Python3 subprocess sandbox |
 
 ---
@@ -73,13 +73,13 @@ Make sure you have installed:
 - **Node.js** v18 or higher → `node --version`
 - **Python 3** → `python3 --version`
 - **npm** → `npm --version`
-- **Gemini API key** → get one at https://aistudio.google.com/app/apikey
+- **Groq API key** → get one at https://console.groq.com/keys
 
 ---
 
-### Step 1 — Get Your Gemini API Key
+### Step 1 — Get Your Groq API Key
 
-1. Go to https://aistudio.google.com/app/apikey
+1. Go to https://console.groq.com/keys
 2. Sign up / log in
 3. Click **Create API key**
 4. Copy the key
@@ -102,8 +102,8 @@ cp .env.example .env
 Now open `.env` and paste your API key:
 
 ```
-GEMINI_API_KEY=your_gemini_api_key_here
-GEMINI_MODEL=gemini-1.5-flash
+GROQ_API_KEY=your_groq_api_key_here
+GROQ_MODEL=llama-3.1-8b-instant
 PORT=3001
 NODE_ENV=development
 CORS_ORIGINS=http://localhost:5173,http://localhost:3000
@@ -120,7 +120,7 @@ You should see:
 ✅ Seeded 6 problems
 ✅ Database ready
 🚀 CodeBuddy API → http://localhost:3001
-🔑 Gemini key    → ✅ configured
+🔑 Groq key      → ✅ configured
 ```
 
 **Verify it works:**
@@ -175,8 +175,8 @@ For a recruiter-facing deployment, set environment variables explicitly:
 Backend (`backend/.env` on your host):
 
 ```
-GEMINI_API_KEY=your_gemini_api_key_here
-GEMINI_MODEL=gemini-1.5-flash
+GROQ_API_KEY=your_groq_api_key_here
+GROQ_MODEL=llama-3.1-8b-instant
 PORT=3001
 NODE_ENV=production
 CORS_ORIGINS=https://your-frontend-domain.com
@@ -199,7 +199,7 @@ Notes:
 
 ### 1. Hint Ladder (core differentiator)
 - Go to any problem → write partial code → click **Level 1** hint
-- Watch it stream character by character from Gemini
+- Watch it stream character by character from Groq
 - Level 2 is locked until you've used Level 1
 - Level 3 is the near-code fallback
 
@@ -228,7 +228,7 @@ Notes:
 
 ```
 • Built CodeBuddy — an AI-powered pair programmer that serves 3-level 
-  adaptive hints (conceptual → pseudocode → near-code) via live Gemini API 
+  adaptive hints (conceptual → pseudocode → near-code) via live Groq API 
   streaming, with sequential unlock logic that preserves learning
 
 • Integrated Monaco Editor (VS Code's editor engine) with a Python 
@@ -272,7 +272,7 @@ Delete `backend/db/codebuddy.db` and restart the server to re-seed.
 
 ## Troubleshooting
 
-**"Gemini key missing"** → make sure `.env` is in `backend/` folder with the key
+**"Groq key missing"** → make sure `.env` is in `backend/` folder with the key
 
 **"python3 not found"** → install Python 3: `sudo apt install python3` (Linux) or via python.org
 
@@ -329,7 +329,7 @@ It verifies:
 - Request ID tracing on backend responses (`X-Request-Id`)
 - Per-request access logs with status and latency
 - Readiness endpoint checks database and API key health
-- Hint-provider fallback: if Gemini fails, users still receive structured fallback hints
+- Hint-provider fallback: if Groq fails, users still receive structured fallback hints
 - Hint UI shows when fallback guidance is being displayed
 
 ---

@@ -3,7 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { dbGet, dbAll, dbRun } from '../db/database.js';
 
 const router = Router();
-const GEMINI_BASE_URL = 'https://generativelanguage.googleapis.com/v1beta/models';
+const GROQ_BASE_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
 function fallbackHint({ level, problem }) {
   const title = problem?.title || 'this problem';
@@ -48,42 +48,39 @@ function fallbackHint({ level, problem }) {
   ].join('\n');
 }
 
-async function* streamGeminiChat({ model, systemPrompt, userPrompt, maxTokens = 700, temperature = 0.2 }) {
-  if (!process.env.GEMINI_API_KEY) {
-    throw new Error('GEMINI_API_KEY is missing');
+async function* streamGroqChat({ model, systemPrompt, userPrompt, maxTokens = 700, temperature = 0.2 }) {
+  if (!process.env.GROQ_API_KEY) {
+    throw new Error('GROQ_API_KEY is missing');
   }
 
-  const endpoint = `${GEMINI_BASE_URL}/${encodeURIComponent(model)}:streamGenerateContent?alt=sse&key=${encodeURIComponent(process.env.GEMINI_API_KEY)}`;
+  const endpoint = GROQ_BASE_URL;
 
   const response = await fetch(endpoint, {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
+      'Accept': 'text/event-stream'
     },
     body: JSON.stringify({
-      systemInstruction: {
-        parts: [{ text: systemPrompt }]
-      },
-      contents: [
-        {
-          role: 'user',
-          parts: [{ text: userPrompt }]
-        }
+      model,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt }
       ],
-      generationConfig: {
-        temperature,
-        maxOutputTokens: maxTokens
-      }
+      temperature,
+      max_tokens: maxTokens,
+      stream: true
     })
   });
 
   if (!response.ok) {
     const errBody = await response.text();
-    throw new Error(`Gemini API error (${response.status}): ${errBody}`);
+    throw new Error(`Groq API error (${response.status}): ${errBody}`);
   }
 
   if (!response.body) {
-    throw new Error('Gemini response stream missing body');
+    throw new Error('Groq response stream missing body');
   }
 
   const decoder = new TextDecoder();
@@ -99,7 +96,7 @@ async function* streamGeminiChat({ model, systemPrompt, userPrompt, maxTokens = 
       if (!trimmed || !trimmed.startsWith('data:')) continue;
 
       const payload = trimmed.slice(5).trim();
-      if (!payload) continue;
+      if (!payload || payload === '[DONE]') continue;
 
       let parsed;
       try {
@@ -108,12 +105,9 @@ async function* streamGeminiChat({ model, systemPrompt, userPrompt, maxTokens = 
         continue;
       }
 
-      const parts = parsed?.candidates?.[0]?.content?.parts;
-      if (!Array.isArray(parts)) continue;
-      for (const part of parts) {
-        if (typeof part?.text === 'string' && part.text.length > 0) {
-          yield part.text;
-        }
+      const text = parsed?.choices?.[0]?.delta?.content;
+      if (typeof text === 'string' && text.length > 0) {
+        yield text;
       }
     }
   }
@@ -211,8 +205,8 @@ Provide a Level ${level} (${lvl.name}) hint following your instructions exactly.
     let usedFallback = false;
 
     try {
-      for await (const token of streamGeminiChat({
-        model: process.env.GEMINI_MODEL || 'gemini-1.5-flash',
+      for await (const token of streamGroqChat({
+        model: process.env.GROQ_MODEL || 'llama-3.1-8b-instant',
         systemPrompt,
         userPrompt: userMessage,
         maxTokens: 700,
