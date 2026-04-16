@@ -19,6 +19,7 @@ dotenv.config({ path: path.join(__dirname, '.env') });
 const app = express();
 const PORT = process.env.PORT || 3001;
 const defaultOrigins = ['http://localhost:5173', 'http://localhost:3000', 'https://codebuddy-zeta.vercel.app'];
+const previewOriginPattern = /^https:\/\/codebuddy-[a-z0-9-]+\.vercel\.app$/;
 
 function getAllowedOrigins() {
   const configured = (process.env.CORS_ORIGINS || '')
@@ -32,7 +33,16 @@ const allowedOrigins = getAllowedOrigins();
 
 app.set('trust proxy', 1);
 
-app.use(cors({ origin: allowedOrigins, credentials: true }));
+app.use(cors({
+  origin: (origin, callback) => {
+    // Allow non-browser/server-to-server requests without an Origin header.
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    if (previewOriginPattern.test(origin)) return callback(null, true);
+    return callback(new Error(`CORS blocked for origin: ${origin}`));
+  },
+  credentials: true
+}));
 app.use(express.json({ limit: '100kb' }));
 
 app.use((req, res, next) => {
