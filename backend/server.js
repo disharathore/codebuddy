@@ -18,7 +18,7 @@ dotenv.config({ path: path.join(__dirname, '.env') });
 
 const app = express();
 const PORT = process.env.PORT || 3001;
-const defaultOrigins = ['http://localhost:5173', 'http://localhost:3000'];
+const defaultOrigins = ['http://localhost:5173', 'http://localhost:3000', 'https://codebuddy-zeta.vercel.app'];
 
 function getAllowedOrigins() {
   const configured = (process.env.CORS_ORIGINS || '')

@@ -185,12 +185,13 @@ CORS_ORIGINS=https://your-frontend-domain.com
 Frontend (`frontend/.env` at build time):
 
 ```
+VITE_API_URL=https://your-backend-domain.com/api
 VITE_API_BASE_URL=https://your-backend-domain.com/api
 VITE_PROXY_TARGET=https://your-backend-domain.com
 ```
 
 Notes:
-- If frontend and backend are deployed on the same domain behind a reverse proxy, keep `VITE_API_BASE_URL=/api`.
+- If frontend and backend are deployed on the same domain behind a reverse proxy, keep `VITE_API_URL=/api`.
 - Always keep real secrets only in `.env`, never in `.env.example`.
 
 ---

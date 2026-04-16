@@ -10,12 +10,18 @@ export default function ProblemsPage() {
   const navigate = useNavigate()
   const [problems, setProblems] = useState([])
   const [loading, setLoading] = useState(true)
+  const [showWarmupMessage, setShowWarmupMessage] = useState(false)
   const [loadError, setLoadError] = useState('')
   const [search, setSearch] = useState('')
   const [filterDiff, setFilterDiff] = useState('all')
   const [filterCat, setFilterCat] = useState('all')
 
   useEffect(() => {
+    setShowWarmupMessage(false)
+    const warmupTimer = setTimeout(() => {
+      setShowWarmupMessage(true)
+    }, 5000)
+
     getProblems()
       .then(data => {
         setProblems(data.problems || [])
@@ -25,7 +31,12 @@ export default function ProblemsPage() {
         console.error(err)
         setLoadError(err.message || 'Failed to load problems')
       })
-      .finally(() => setLoading(false))
+      .finally(() => {
+        setLoading(false)
+        clearTimeout(warmupTimer)
+      })
+
+    return () => clearTimeout(warmupTimer)
   }, [])
 
   const categories = ['all', ...new Set(problems.map(p => p.category))]
@@ -106,6 +117,11 @@ export default function ProblemsPage() {
           {[...Array(4)].map((_, i) => (
             <div key={i} className="glass rounded-xl h-24 animate-pulse" />
           ))}
+          {showWarmupMessage && (
+            <div className="text-center text-xs text-slate-500 pt-2">
+              Our free backend is waking up — first load takes ~30 seconds.
+            </div>
+          )}
         </div>
       ) : loadError ? (
         <div className="text-center py-20 text-rose-300">

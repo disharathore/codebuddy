@@ -12,3 +12,5 @@ services:
         value: production
       - key: GROQ_MODEL
         value: llama-3.1-8b-instant
+      - key: CORS_ORIGINS
+        value: https://codebuddy-zeta.vercel.app

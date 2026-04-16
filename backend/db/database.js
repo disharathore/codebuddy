@@ -102,6 +102,7 @@ function initSchema() {
     problem_id TEXT, metadata TEXT, created_at INTEGER DEFAULT (strftime('%s','now'))
   )`);
   seedProblems();
+  seedDemoAnalytics();
   persist();
 }
 
@@ -413,4 +414,87 @@ print(s2)  # Expected: ['h', 'a', 'n', 'n', 'a', 'H']`,
     );
   }
   console.log(`✅ Seeded ${problems.length} problems`);
+}
+
+function seedDemoAnalytics() {
+  const row = dbGet('SELECT COUNT(*) as c FROM analytics');
+  if (row && Number(row.c) > 0) return;
+
+  const problemIds = dbAll('SELECT id FROM problems ORDER BY id').map(problem => problem.id);
+  if (problemIds.length === 0) return;
+
+  const now = Math.floor(Date.now() / 1000);
+  const sessions = [];
+
+  for (let index = 0; index < 50; index += 1) {
+    const problemId = problemIds[index % problemIds.length];
+    const startedAt = now - ((49 - index) * 6 * 3600) - ((index % 6) * 900);
+
+    let hintsUsed = 0;
+    let maxHintLevel = 0;
+    let solved = false;
+
+    if (index < 20) {
+      hintsUsed = 0;
+      maxHintLevel = 0;
+      solved = index < 12;
+    } else if (index < 35) {
+      hintsUsed = 1;
+      maxHintLevel = 1;
+      solved = index < 31;
+    } else if (index < 45) {
+      hintsUsed = 2;
+      maxHintLevel = 2;
+      solved = index < 43;
+    } else {
+      hintsUsed = 3;
+      maxHintLevel = 3;
+      solved = index < 48;
+    }
+
+    const timeSpentSeconds = solved
+      ? 180 + (index % 5) * 35 + hintsUsed * 20
+      : 420 + (index % 4) * 45 + hintsUsed * 25;
+    const completedAt = startedAt + timeSpentSeconds;
+    const sessionId = `demo-session-${String(index + 1).padStart(2, '0')}`;
+    const finalCode = solved ? `# demo solution ${index + 1}` : null;
+    const solvedFlag = solved ? 1 : 0;
+
+    dbRun(`INSERT INTO sessions (id, problem_id, user_fingerprint, started_at, completed_at, solved, hints_used, max_hint_level, time_spent_seconds, final_code)
+           VALUES (?,?,?,?,?,?,?,?,?,?)`,
+      [sessionId, problemId, `demo-user-${(index % 12) + 1}`, startedAt, solved ? completedAt : null, solvedFlag, hintsUsed, maxHintLevel, timeSpentSeconds, finalCode]);
+
+    dbRun(`INSERT INTO analytics (id, event, session_id, problem_id, metadata, created_at)
+           VALUES (?,?,?,?,?,?)`,
+      [`demo-analytics-${String(index + 1).padStart(2, '0')}-start`, 'session_started', sessionId, problemId, JSON.stringify({ demo: true }), startedAt]);
+
+    if (hintsUsed > 0) {
+      for (let level = 1; level <= hintsUsed; level += 1) {
+        const hintId = `demo-hint-${String(index + 1).padStart(2, '0')}-${level}`;
+        const hintResponse = `Demo ${level === 1 ? 'conceptual' : level === 2 ? 'pseudocode' : 'near-code'} hint for ${problemId}`;
+        const responseTimeMs = 320 + level * 45 + (index % 5) * 18;
+        dbRun(`INSERT INTO hint_requests (id, session_id, problem_id, hint_level, user_code, hint_response, response_time_ms)
+               VALUES (?,?,?,?,?,?,?)`,
+          [hintId, sessionId, problemId, level, `# demo code ${index + 1}`, hintResponse, responseTimeMs]);
+
+        dbRun(`INSERT INTO analytics (id, event, session_id, problem_id, metadata, created_at)
+               VALUES (?,?,?,?,?,?)`,
+          [`demo-analytics-${String(index + 1).padStart(2, '0')}-hint-${level}`, 'hint_requested', sessionId, problemId, JSON.stringify({ hint_level: level, demo: true }), startedAt + level * 120]);
+      }
+    }
+
+    dbRun(`INSERT INTO code_runs (id, session_id, code, output, error, passed_tests, total_tests, run_at)
+           VALUES (?,?,?,?,?,?,?,?)`,
+      [`demo-run-${String(index + 1).padStart(2, '0')}`, sessionId, `# demo submission ${index + 1}`, solved ? 'All tests passed' : '1 test failed', solved ? null : 'AssertionError', solved ? 3 : 2, 3, startedAt + timeSpentSeconds - 90]);
+
+    dbRun(`INSERT INTO analytics (id, event, session_id, problem_id, metadata, created_at)
+           VALUES (?,?,?,?,?,?)`,
+      [`demo-analytics-${String(index + 1).padStart(2, '0')}-run`, 'code_run', sessionId, problemId, JSON.stringify({ demo: true, passed_tests: solved ? 3 : 2, total_tests: 3 }), startedAt + timeSpentSeconds - 90]);
+
+    dbRun(`INSERT INTO analytics (id, event, session_id, problem_id, metadata, created_at)
+           VALUES (?,?,?,?,?,?)`,
+      [`demo-analytics-${String(index + 1).padStart(2, '0')}-completed`, solved ? 'session_completed' : 'session_incomplete', sessionId, problemId, JSON.stringify({ solved: solvedFlag, hints_used: hintsUsed, time_spent_seconds: timeSpentSeconds, demo: true }), completedAt]);
+  }
+
+  console.log('✅ Seeded 50 demo analytics sessions');
 }

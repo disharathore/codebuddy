@@ -12,12 +12,16 @@ This setup deploys:
 4. Set these environment variables in Render dashboard:
   - GROQ_API_KEY = your real key
   - GROQ_MODEL = llama-3.1-8b-instant
-   - CORS_ORIGINS = https://your-frontend-domain.vercel.app
+  - CORS_ORIGINS = https://codebuddy-zeta.vercel.app
 5. Deploy and wait for green health.
 6. Verify backend URLs:
    - /health/live
    - /health/ready
    - /api/problems
+
+### Keep backend warm
+
+Set up a free uptime monitor against `https://codebuddy-rfiz.onrender.com/health` so Render free tier stays awake for demos.
 
 ## 2. Frontend deploy on Vercel
 
@@ -26,8 +30,9 @@ This setup deploys:
 3. Framework preset: Vite.
 4. Build command: npm run build
 5. Output directory: dist
-6. Add environment variable:
-   - VITE_API_BASE_URL = https://your-render-backend.onrender.com/api
+6. Add environment variables:
+  - VITE_API_URL = https://your-render-backend.onrender.com/api
+  - VITE_API_BASE_URL = https://your-render-backend.onrender.com/api
 7. Deploy.
 
 The frontend has vercel.json rewrite support for React routes.
@@ -63,7 +68,7 @@ All checks should pass.
   Verify GROQ_API_KEY exists in Render and key is active.
 
 - Frontend loads but API fails:
-  Verify VITE_API_BASE_URL points to backend /api URL.
+  Verify VITE_API_URL or VITE_API_BASE_URL points to backend /api URL.
 
 - React route refresh gives 404:
   Ensure frontend/vercel.json exists with rewrite to index.html.
